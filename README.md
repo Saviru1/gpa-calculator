@@ -72,8 +72,8 @@ Your GPA for the current semester is: 3.44
 Your cumulative GPA is: 3.48
 ```
 
-Contributing
+### Contributing
 Contributions are welcome! Please create a pull request with a detailed description of your changes.
 
-License
+### License
 This project is licensed under the MIT License. See the LICENSE file for details.
