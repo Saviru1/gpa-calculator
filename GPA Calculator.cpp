@@ -1,14 +1,37 @@
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <limits>
 #include <vector>
 #include <string>
+#include <windows.h>
+
+// Add this to prevent macro conflicts
+#undef min
+#undef max
+
 using namespace std;
 
-// We create Function to get the GPA value of a grade
-double getGradePoint(const string& grade) {
-    //use map keyward for map the resula and credit values
-    map<string, double> gradeMap = {
+// Function to set console color
+void setColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+// Function to clear screen
+void clearScreen() {
+    system("cls");
+}
+
+// Function to display banner
+void displayBanner() {
+    cout << "          GPA CALCULATOR 2.0          \n";
+	cout << "──────────────────────────────────────\n";
+    setColor(7); // Reset to default color
+}
+
+// Optimized grade point calculation using const reference
+const double getGradePoint(const string& grade) {
+    static const map<string, double> gradeMap = {
         {"A+", 4.0}, {"A", 4.0}, {"A-", 3.7}, {"B+", 3.3},
         {"B", 3.0}, {"B-", 2.7}, {"C+", 2.3}, {"C", 2.0},
         {"C-", 1.7}, {"D+", 1.3}, {"D", 1.0}, {"D-", 0.7},
@@ -19,117 +42,115 @@ double getGradePoint(const string& grade) {
     if (it != gradeMap.end()) {
         return it->second;
     }
-    else {
-        cout << "Invalid grade entered! Defaulting to 0.0" << endl;
-        return 0.0;
+    setColor(12); // Red
+    cout << "Invalid grade entered! Defaulting to 0.0" << endl;
+    setColor(7); // Reset color
+    return 0.0;
+}
+
+// Function to get validated input
+template<typename T>
+T getValidInput(const string& prompt, T min, T max) {
+    T value;
+    while (true) {
+        cout << prompt;
+        if (cin >> value && value >= min && value <= max) {
+            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            return value;
+        }
+        setColor(12); // Red
+        cout << "Invalid input! Please try again." << endl;
+        setColor(7); // Reset color
+        cin.clear();
+        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 }
 
 int main() {
-    char hasPreviousData;
-    double previousCredits = 0.0, previousGPA = 0.0;
+    clearScreen();
+    displayBanner();
 
-    // If there exist previous Prompt user for previous semester data
-    cout << "Do you have previous semester GPA and total credits? (y/n): ";
+    // Previous semester data
+    double previousCredits = 0.0, previousGPA = 0.0;
+    
+    setColor(14); // Yellow
+    cout << "Do you have previous semester data? (y/n): ";
+    setColor(7);
+    char hasPreviousData;
     cin >> hasPreviousData;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear newline character
+    cin.ignore();
 
     if (tolower(hasPreviousData) == 'y') {
-        // Ensure valid input for previous credits
-        while (true) {
-            cout << "Enter total credits from previous semesters: ";
-            cin >> previousCredits;
-            if (cin.fail() || previousCredits < 0) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input! Please enter a non-negative number." << endl;
-            }
-            else {
-                break;
-            }
-        }
-
-        // Ensure valid input for previous GPA
-        while (true) {
-            cout << "Enter cumulative GPA from previous semesters: ";
-            cin >> previousGPA;
-            if (cin.fail() || previousGPA < 0.0 || previousGPA > 4.0) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input! Please enter a GPA between 0.0 and 4.0." << endl;
-            }
-            else {
-                break;
-            }
-        }
+        previousCredits = getValidInput<double>("Enter total previous credits: ", 0.0, 1000.0);
+        previousGPA = getValidInput<double>("Enter previous GPA (0.0-4.0): ", 0.0, 4.0);
     }
 
-    int numSubjects;
-    // Ensure valid input for number of subjects
-    while (true) {
-        cout << "Enter the number of subjects for the current semester: ";
-        cin >> numSubjects;
-        if (cin.fail() || numSubjects <= 0) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input! Please enter a positive integer." << endl;
-        }
-        else {
-            cin.ignore(); // Clear newline character
-            break;
-        }
-    }
+    int numSubjects = getValidInput<int>("Enter number of current subjects: ", 1, 20);
 
+    vector<tuple<string, double, double>> subjects; // name, credits, grade points
     double totalCredits = 0.0, totalPoints = 0.0;
-    vector<pair<string, double>> subjects;
 
+    clearScreen();
+    displayBanner();
+
+    // Input subject details
     for (int i = 0; i < numSubjects; ++i) {
-        string subjectName;
-        double credit;
-        string grade;
+        setColor(11);
+        cout << "\nSubject " << (i + 1) << " of " << numSubjects << endl;
+        cout << "───────────────────────\n";
+        setColor(7);
 
-        cout << "Enter subject name: ";
+        string subjectName;
+        cout << "Subject name: ";
         getline(cin, subjectName);
 
-        // Ensure valid input for credits
-        while (true) {
-            cout << "Enter credit hours for " << subjectName << ": ";
-            cin >> credit;
-            if (cin.fail() || credit <= 0) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input! Please enter a positive number." << endl;
-            }
-            else {
-                break;
-            }
-        }
-
-        cout << "Enter grade for " << subjectName << ": ";
+        double credit = getValidInput<double>("Credit hours: ", 0.1, 6.0);
+        
+        cout << "Grade (A+,A,A-,B+,B,B-,C+,C,C-,D+,D,D-,F): ";
+        string grade;
         cin >> grade;
-        cin.ignore(); // Clear newline character for next input
+        cin.ignore();
 
         double gradePoint = getGradePoint(grade);
-        subjects.push_back({ subjectName, gradePoint });
+        subjects.emplace_back(subjectName, credit, gradePoint);
         totalCredits += credit;
         totalPoints += credit * gradePoint;
     }
 
-    cout << "\nSubject-wise Results:" << endl;
+    // Display results
+    clearScreen();
+    displayBanner();
+    
+    setColor(10); // Green
+    cout << "\nRESULTS SUMMARY\n";
+    cout << "───────────────\n\n";
+    setColor(7);
+
+    cout << setprecision(2) << fixed;
+    
+    // Subject-wise results
     for (const auto& subject : subjects) {
-        cout << subject.first << " = " << subject.second << endl;
+        cout << left << setw(30) << get<0>(subject) << ": ";
+        setColor(11);
+        cout << get<2>(subject) << " GPA" << endl;
+        setColor(7);
     }
 
-    double currentGPA = (totalCredits == 0) ? 0 : (totalPoints / totalCredits);
-    cout << "\nYour GPA for the current semester is: " << currentGPA << endl;
+    double currentGPA = (totalCredits > 0) ? (totalPoints / totalCredits) : 0.0;
+    
+    cout << "\n────────────────────────────────────\n";
+    setColor(14);
+    cout << "Current Semester GPA: " << currentGPA << endl;
 
-    // Calculate cumulative GPA if previous data exists
     if (tolower(hasPreviousData) == 'y' && previousCredits > 0) {
         double cumulativeTotalPoints = (previousGPA * previousCredits) + totalPoints;
         double cumulativeTotalCredits = previousCredits + totalCredits;
         double cumulativeGPA = cumulativeTotalPoints / cumulativeTotalCredits;
-        cout << "Your cumulative GPA is: " << cumulativeGPA << endl;
+        cout << "Cumulative GPA: " << cumulativeGPA << endl;
     }
+    setColor(7);
 
+    cout << "\nPress Enter to exit...";
+    cin.get();
     return 0;
 }
